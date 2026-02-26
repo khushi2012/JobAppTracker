@@ -1,0 +1,1 @@
+#extract structured data to get job info LLM returns clean JSON 
