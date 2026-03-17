@@ -11,6 +11,10 @@
             "matches": ["<all_urls>"],
             "js": ["dist/content.js"]
         }
+    ],
+    "host_permissions":[
+        "<all_urls>"
     ]
+    
 
 }

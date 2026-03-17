@@ -1,52 +1,144 @@
-//runs on job pages 
-// detect page change, grab text, send to backend 
-//checks if extension is installed correctly, content script injecting properly, ts compiled right, and page data is accessible 
+// runs on job pages
+// detect page change, grab text, send to backend
+// checks if extension is installed correctly, content script injecting properly,
+// ts compiled right, and page data is accessible
 
-console.log("AI Job Tracker active on: ", window.location.href);
+console.log("AI Job Tracker active on:", window.location.href);
 
-//creating button for saving job 
-const button = document.createElement("button");
-button.innerText = "Save Job";
-button.style.position = "fixed";
-button.style.bottom = "20px";
-button.style.right = "20px";
-button.style.padding = "10px 15px";
-button.style.backgroundColor = "#4CAF50";
-button.style.color = "white";
-button.style.border = "none";
-button.style.borderRadius = "8px";
-button.style.cursor = "pointer";
-button.style.zIndex = "9999";
+/*
+-----------------------------------
+RUN WHEN PAGE CHANGES
+-----------------------------------
+Used to re-run job detection
+when navigating job boards
+*/
 
-document.body.appendChild(button)
+function onPageChange() {
 
-// sending job data when clicked
-//grabbing page title, url, and placeholder company and send to bkg 
-button.addEventListener("click", () => {
-    const titleElement = document.querySelector("h1");
+    console.log("Checking if new page is job posting");
 
-    const companyElement = document.querySelector('a[href*="/employers/"]');
+    const pageText = document.body.innerText.toLowerCase();
 
-    const locationElement = Array.from(document.querySelectorAll("div"))
-        .find(div => div.textContent?.includes(","));
+    const jobSignals = [
+        "job description",
+        "responsibilities",
+        "qualifications",
+        "apply now",
+        "about the role",
+        "requirements"
+    ];
 
-    const jobData = {
-        title: titleElement?.textContent?.trim() || document.title,
-        company: companyElement?.textContent?.trim() || "Unknown",
-        location: locationElement?.textContent?.trim() || "Unknown",
-        url: window.location.href,
-        status: "Applied"
-    };
+    const isJobPage = jobSignals.some(signal =>
+        pageText.includes(signal)
+    );
+
+    if (isJobPage) {
+        console.log("Job page detected after navigation");
+    }
+
+}/*
+-----------------------------------
+DETECT FORM SUBMISSIONS
+-----------------------------------
+Many job applications end with a
+form submission, so we detect this
+to automatically track applications
+*/
+
+document.addEventListener("submit", (event) => {
+
+    console.log("Form submission detected");
+
+    extractAndSendJob();
+
+});
+/*
+-----------------------------------
+DETECT URL CHANGES (FOR REACT SITES)
+-----------------------------------
+Many job sites dynamically change
+the page without reloading.
+*/
+
+let lastUrl = location.href;
+
+const observer = new MutationObserver(() => {
+
+    const currentUrl = location.href;
+
+    if (currentUrl !== lastUrl) {
+
+        lastUrl = currentUrl;
+
+        console.log("Page changed:", currentUrl);
+
+        onPageChange();
+    }
+
+});
+
+observer.observe(document, { subtree: true, childList: true });
+/*
+-----------------------------------
+DETECT APPLY BUTTON CLICKS
+-----------------------------------
+Listens for clicks on the page and
+checks if the clicked element is
+an "apply" button or link
+*/
+
+document.addEventListener("click", (event) => {
+
+    const target = event.target as HTMLElement;
+
+    if (!target) return;
+
+    const elementText = target.innerText?.toLowerCase() || "";
+
+    const applySignals = [
+        "submit application",
+        "submit",
+        "apply now",
+        "easy apply",
+        "send application"
+    ];
+
+    const isApplyButton = applySignals.some(signal =>
+        elementText.includes(signal)
+    );
+
+
+
+    if (isApplyButton) {
+
+        console.log("Apply button detected");
+
+        extractAndSendJob();
+
+    }
+
+});
+
+
+
+/*
+-----------------------------------
+EXTRACT PAGE TEXT AND SEND TO AI
+-----------------------------------
+*/
+
+function extractAndSendJob() {
+
+    const pageText = document.body.innerText;
 
     chrome.runtime.sendMessage({
-        type: "SAVE_JOB",
-        payload: jobData
+        type: "EXTRACT_JOB_WITH_AI",
+        payload: {
+            text: pageText,
+            url: window.location.href
+        }
     });
 
-    alert("Job Saved!");
-});
-//sending message to background script of page loaded 
-//chrome.runtime.sendMessage({
-//  type: "PAGE_LOADED",
-//url: window.location.href
-//});
+    console.log("Job sent to AI for extraction");
+
+}
