@@ -30,7 +30,10 @@ chrome.runtime.onMessage.addListener(async (message) => {
     });
 
     const aiOutput = await response.json();
-
+    if (aiOutput.error) {
+      console.log("Not a job page, skipping...");
+      return;
+    }
 
     const newJob: Job = {
       title: aiOutput.title,

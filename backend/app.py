@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from ai.extractor import extract_job
+from ai.extractor import extract_job, is_job_page
 
 app = FastAPI()
 
@@ -10,13 +10,18 @@ class JobRequest(BaseModel):
 
 
 @app.post("/extract-job")
-def extract_job(request: JobRequest):
+def extract(request: JobRequest):
 
-    print("Received job page from extension")
+    print("Checking if job page...")
 
-    # temporary fake data
-    return {
-        "title": "Test Job",
-        "company": "Test Company",
-        "location": "Test Location"
-    }
+    if not is_job_page(request.text):
+        print("Not a job page ❌")
+        return {"error": "Not a job page"}
+
+    print("Job page detected ✅")
+
+    job = extract_job(request.text)
+
+    print("AI RESULT:", job)
+
+    return job
