@@ -10,58 +10,71 @@ interface Job {
   status: string;
 }
 
-chrome.runtime.onMessage.addListener(async (message) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "EXTRACT_JOB_WITH_AI") {
 
-    const pageText = message.payload.text;
-    const url = message.payload.url;
+    (async () => {
+      console.log("✅ Message received in background");
 
-    // send job text to AI model
-    const response = await fetch("http://localhost:8000/extract-job", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text: pageText,
-        url: url
-      })
-    });
+      const pageText = message.payload.text;
+      const url = message.payload.url;
 
-    const aiOutput = await response.json();
-    if (aiOutput.error) {
-      console.log("Not a job page, skipping...");
-      return;
-    }
+      try {
+        console.log("Sending request to backend...");
 
-    const newJob: Job = {
-      title: aiOutput.title,
-      company: aiOutput.company,
-      location: aiOutput.location,
-      url,
-      status: "Applied"
-    };
+        const response = await fetch("http://localhost:8000/extract-job", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: pageText,
+            url: url
+          })
+        });
 
-    chrome.storage.local.get(["jobs"], (result) => {
+        console.log("Response status:", response.status);
 
-      const jobs = (result.jobs as Job[]) || [];
+        const aiOutput = await response.json();
+        console.log("AI OUTPUT:", aiOutput);
 
-      const alreadySaved = jobs.some(job => job.url === newJob.url);
+        if (aiOutput.error) {
+          console.log("Not a job page, skipping...");
+          return;
+        }
 
-      if (alreadySaved) {
-        console.log("Job already saved");
-        return;
+        const newJob: Job = {
+          title: aiOutput.title,
+          company: aiOutput.company,
+          location: aiOutput.location,
+          url,
+          status: "Applied"
+        };
+
+        chrome.storage.local.get(["jobs"], (result) => {
+          const jobs = (result.jobs as Job[]) || [];
+
+          const alreadySaved = jobs.some(job => job.url === newJob.url);
+
+          if (alreadySaved) {
+            console.log("Job already saved");
+            return;
+          }
+
+          jobs.push(newJob);
+
+          chrome.storage.local.set({ jobs }, () => {
+            console.log("AI job saved:", newJob);
+          });
+        });
+
+      } catch (err) {
+        console.error("❌ FETCH ERROR:", err);
       }
 
-      jobs.push(newJob);
-
-      chrome.storage.local.set({ jobs }, () => {
-        console.log("AI job saved:", newJob);
-      });
-
-    });
-
+    })();
   }
 
+  return true; 
 });
