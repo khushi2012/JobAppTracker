@@ -9,6 +9,16 @@ from models.jobs import Job
 Job.metadata.create_all(bind=engine)
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class JobRequest(BaseModel):
     text: str
     url: str
