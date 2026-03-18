@@ -1,15 +1,20 @@
-//listening for messages from content script and logs them 
-//chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-//  console.log("Message received: ", message)
-//})
-interface Job {
-  title: string;
-  company: string;
-  location: string;
-  url: string;
-  status: string;
+// Generate or get user ID
+async function getUserId() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["userId"], (result) => {
+      if (result.userId) {
+        resolve(result.userId);
+      } else {
+        const newId = crypto.randomUUID();
+        chrome.storage.local.set({ userId: newId }, () => {
+          resolve(newId);
+        });
+      }
+    });
+  });
 }
 
+// Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "EXTRACT_JOB_WITH_AI") {
@@ -21,6 +26,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const url = message.payload.url;
 
       try {
+        const userId = await getUserId();
+        console.log("User ID:", userId);
+
         console.log("Sending request to backend...");
 
         const response = await fetch("http://localhost:8000/extract-job", {
@@ -30,7 +38,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           },
           body: JSON.stringify({
             text: pageText,
-            url: url
+            url: url,
+            userId: userId   // ✅ IMPORTANT
           })
         });
 
@@ -44,30 +53,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        const newJob: Job = {
-          title: aiOutput.title,
-          company: aiOutput.company,
-          location: aiOutput.location,
-          url,
-          status: "Applied"
-        };
-
-        chrome.storage.local.get(["jobs"], (result) => {
-          const jobs = (result.jobs as Job[]) || [];
-
-          const alreadySaved = jobs.some(job => job.url === newJob.url);
-
-          if (alreadySaved) {
-            console.log("Job already saved");
-            return;
-          }
-
-          jobs.push(newJob);
-
-          chrome.storage.local.set({ jobs }, () => {
-            console.log("AI job saved:", newJob);
-          });
-        });
+        console.log("✅ Job saved to DB");
 
       } catch (err) {
         console.error("❌ FETCH ERROR:", err);
@@ -76,5 +62,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
   }
 
-  return true; 
+  return true;
 });
