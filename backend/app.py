@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from ai.extractor import extract_job, is_job_page
+from backend.ai.extractor import extract_job, is_job_page
 
 #init db 
-from db import SessionLocal, engine
+from backend.db import SessionLocal, engine
 from models.jobs import Job 
 
 Job.metadata.create_all(bind=engine)
