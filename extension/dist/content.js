@@ -3,6 +3,7 @@
 // detect page change, grab text, send to backend
 // checks if extension is installed correctly, content script injecting properly,
 // ts compiled right, and page data is accessible
+console.log("CONTENT SCRIPT RUNNING");
 console.log("AI Job Tracker active on:", window.location.href);
 /*
 -----------------------------------
@@ -88,6 +89,7 @@ EXTRACT PAGE TEXT AND SEND TO AI
 */
 function extractAndSendJob() {
     const pageText = document.body.innerText;
+    console.log("SENDING MESSAGE");
     chrome.runtime.sendMessage({
         type: "EXTRACT_JOB_WITH_AI",
         payload: {
