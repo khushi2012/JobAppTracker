@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         console.log("Sending request to backend...");
 
-        const response = await fetch("http://localhost:8000/extract-job", {
+        const response = await fetch("https://jobapptracker-1.onrender.com/extract-job", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

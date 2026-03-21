@@ -2,7 +2,7 @@ let currentFilter = "All";
 let currentSearch = "";
 async function loadJobs() {
     try {
-        const res = await fetch("http://localhost:8000/jobs");
+        const res = await fetch("https://jobapptracker-1.onrender.com/jobs");
         const jobs = await res.json();
 
         const container = document.getElementById("jobs");
@@ -59,7 +59,7 @@ document.addEventListener("change", async (e) => {
     const jobId = target.getAttribute("data-id");
     const newStatus = target.value;
 
-    await fetch(`http://localhost:8000/jobs/${jobId}?status=${newStatus}`, {
+    await fetch(`https://jobapptracker-1.onrender.com/jobs/${jobId}?status=${newStatus}`, {
         method: "PUT"
     });
 
@@ -77,7 +77,7 @@ document.addEventListener("click", async (e) => {
 
     const jobId = target.getAttribute("data-id");
 
-    await fetch(`http://localhost:8000/jobs/${jobId}`, {
+    await fetch(`https://jobapptracker-1.onrender.com/jobs/${jobId}`, {
         method: "DELETE"
     });
 
