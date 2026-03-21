@@ -1,16 +1,10 @@
-import google.generativeai as genai
+from google import genai
 import json
-from config import GEMINI_API_KEY
+import os
 
-# configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-
-# create model
-model = genai.GenerativeModel("gemini-2.5-flash")
-
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def extract_job(text: str):
-
     prompt = f"""
     Extract:
     - job title
@@ -29,51 +23,44 @@ def extract_job(text: str):
     {text[:4000]}
     """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.5-pro",
+        contents=prompt
+    )
 
-    content = response.text.strip()
-
-    # remove markdown if Gemini adds it
+    content = (response.text or "").strip()
     content = content.replace("```json", "").replace("```", "").strip()
 
     try:
         return json.loads(content)
-    except:
-        print("JSON PARSE ERROR:", content)
+    except Exception:
         return {
             "title": "Unknown",
             "company": "Unknown",
             "location": "Unknown"
         }
-        
+
 def is_job_page(text: str):
-
     prompt = f"""
-    You are a classifier.
-
-    Determine if the following page content is a job posting.
+    Determine if this is a job posting.
 
     Return ONLY JSON:
-    {{
-      "is_job": true
-    }}
-    or
-    {{
-      "is_job": false
-    }}
+    {{ "is_job": true }} or {{ "is_job": false }}
 
-    Page Content:
+    Content:
     {text[:3000]}
     """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
 
-    content = response.text.strip()
+    content = (response.text or "").strip()
     content = content.replace("```json", "").replace("```", "").strip()
 
     try:
         result = json.loads(content)
         return result.get("is_job", False)
-    except:
-        print("DETECTION ERROR:", content)
+    except Exception:
         return False
